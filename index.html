@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Weather Dashboard | Kishore</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 30px 16px;
+      font-family: Arial, sans-serif;
+      color: #f1f5f9;
+      background: linear-gradient(135deg, #07111f, #17365c);
+    }
+
+    header {
+      text-align: center;
+      margin: 15px auto 35px;
+    }
+
+    header h1 {
+      font-size: clamp(25px, 5vw, 38px);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #b8c8df;
+    }
+
+    .dashboard {
+      max-width: 850px;
+      margin: auto;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      padding: 30px 15px;
+      text-align: center;
+      background: #14243a;
+      border: 1px solid #2b4260;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px #0002;
+    }
+
+    .icon {
+      font-size: 36px;
+    }
+
+    .card h2 {
+      color: #cbd5e1;
+      font-size: 19px;
+    }
+
+    .value {
+      margin-top: 18px;
+      font-size: clamp(30px, 6vw, 48px);
+      font-weight: bold;
+      color: #60a5fa;
+      overflow-wrap: anywhere;
+    }
+
+    .unit {
+      font-size: 20px;
+    }
+
+    #status {
+      max-width: 850px;
+      margin: 25px auto;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      background: #14243a;
+      overflow-wrap: anywhere;
+    }
+
+    .footer {
+      margin: 30px auto;
+      text-align: center;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🌦️ ESP32 Weather Dashboard</h1>
+    <p>Live Temperature &amp; Humidity Monitoring</p>
+  </header>
+
+  <main class="dashboard">
+    <section class="card">
+      <div class="icon">🌡️</div>
+      <h2>Temperature</h2>
+      <div class="value" id="temp">-- <span class="unit">°C</span></div>
+    </section>
+
+    <section class="card">
+      <div class="icon">💧</div>
+      <h2>Humidity</h2>
+      <div class="value" id="hum">-- <span class="unit">%</span></div>
+    </section>
+  </main>
+
+  <div id="status" role="status" aria-live="polite">
+    Connecting to Firebase...
+  </div>
+
+  <div class="footer">
+    ESP32 + DHT22 + Wokwi + Firebase Realtime Database
+    <br><br>
+    Project by Kishore
+  </div>
+
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+
+    import {
+      getDatabase,
+      ref,
+      onValue
+    } from
+      "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
+
+    // Your existing Firebase project configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSIblsl6gdpjXtOjA8HxEEzDOOBU8Q70",
+      authDomain: "esp32-wheather-by-kishore.firebaseapp.com",
+      databaseURL: "https://esp32-wheather-by-kishore-default-rtdb.firebaseio.com",
+      projectId: "esp32-wheather-by-kishore",
+      storageBucket: "esp32-wheather-by-kishore.firebasestorage.app",
+      messagingSenderId: "206206512688",
+      appId: "1:206206512688:web:a7628a5ed9f369e56607f5",
+      measurementId: "G-KV3BBPMG56"
+    };
+
+    const tempElement = document.getElementById("temp");
+    const humElement = document.getElementById("hum");
+    const statusElement = document.getElementById("status");
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      // Matches your existing Firebase data path:
+      // weather → current → temperature, humidity
+      const sensorRef = ref(database, "weather/current");
+
+      onValue(
+        sensorRef,
+        (snapshot) => {
+          const data = snapshot.val();
+
+          if (
+            data &&
+            typeof data.temperature === "number" &&
+            typeof data.humidity === "number"
+          ) {
+            tempElement.innerHTML =
+              `${data.temperature.toFixed(1)} <span class="unit">°C</span>`;
+
+            humElement.innerHTML =
+              `${data.humidity.toFixed(1)} <span class="unit">%</span>`;
+
+            statusElement.textContent =
+              "🟢 Connected — live Firebase sensor data received.";
+          } else {
+            statusElement.textContent =
+              "Connected, but valid temperature and humidity data were not found at weather/current.";
+          }
+        },
+        (error) => {
+          statusElement.textContent =
+            "Firebase read error: " + error.message;
+        }
+      );
+    } catch (error) {
+      statusElement.textContent =
+        "Could not initialize Firebase: " + error.message;
+    }
+  </script>
+</body>
+</html>
